@@ -1,6 +1,11 @@
-import ProductDetailContent from "@/components/product/ProductDetailContent";
-import { fetchProductByUid } from "@/lib/graphql/api/productDetail";
+import {
+  fetchProductByUid,
+  ProductNotFoundError,
+} from "@/lib/graphql/api/productDetail";
+import type { Product } from "@/types/product";
 import { notFound } from "next/navigation";
+import ProductBreadcrumb from "./_components/ProductBreadcrumb";
+import ProductDetailsContainer from "./_components/ProductDetailsContainer";
 
 interface ProductDetailPageProps {
   params: Promise<{ uid: string }>;
@@ -8,15 +13,24 @@ interface ProductDetailPageProps {
 
 const ProductDetailPage = async ({ params }: ProductDetailPageProps) => {
   const { uid } = await params;
+  let product: Product;
 
-  let product;
   try {
     product = await fetchProductByUid(uid);
-  } catch {
-    notFound();
+  } catch (error) {
+    if (error instanceof ProductNotFoundError) {
+      notFound();
+    }
+
+    throw error;
   }
 
-  return <ProductDetailContent product={product} />;
+  return (
+    <>
+      <ProductBreadcrumb productName={product.enName} />
+      <ProductDetailsContainer product={product} />
+    </>
+  );
 };
 
 export default ProductDetailPage;

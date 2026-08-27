@@ -2,23 +2,23 @@
 
 import { useState } from "react";
 import type { Product } from "@/types/product";
-import ImageGallery from "@/components/product/ImageGallery";
-import VariantSelector from "@/components/product/VariantSelector";
-import PriceDisplay from "@/components/product/PriceDisplay";
-import TabsContainer from "@/components/product/TabsContainer";
-import LabeledInfoSection from "@/components/product/LabeledInfoSection";
 import { buildProductTabs } from "@/utils/buildProductTab";
 import {
   getDefaultVariantIndex,
   getVariantDisplayImages,
   isInStock,
 } from "@/utils/productHelper";
+import LabeledInfoSection from "./LabeledInfoSection";
+import ImageGallery from "./ImageGallery";
+import PriceDisplay from "./PriceDisplay";
+import VariantSelector from "./VariantSelector";
+import TabsContainer from "./TabsContainer";
 
-interface ProductDetailContentProps {
+interface ProductDetailsContainerProps {
   product: Product;
 }
 
-const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
+const ProductDetailsContainer = ({ product }: ProductDetailsContainerProps) => {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(() =>
     getDefaultVariantIndex(product.variants),
   );
@@ -31,14 +31,19 @@ const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
   const displayImages = getVariantDisplayImages(selectedVariant, product);
 
   const tabs = buildProductTabs(product).map((tab) => ({
+    id: tab.id,
     label: tab.label,
     content: <LabeledInfoSection items={tab.sections} />,
   }));
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-        <ImageGallery images={displayImages} productName={product.enName} />
+        <ImageGallery
+          key={selectedVariant.uid || selectedVariantIndex}
+          images={displayImages}
+          productName={product.enName}
+        />
 
         <div className="animate-fade-in space-y-6">
           <h1 className="text-2xl font-bold leading-tight text-[var(--color-text-primary)] sm:text-3xl">
@@ -75,4 +80,4 @@ const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
   );
 };
 
-export default ProductDetailContent;
+export default ProductDetailsContainer;

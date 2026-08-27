@@ -1,5 +1,5 @@
-import type { Product, Variant } from "../types/product";
-import type { ProductListVariant } from "../types/productList";
+import { ProductListVariant } from "@/types/productList";
+import type { Product, Variant } from "@/types/product";
 
 const EMPTY_VARIANT: Variant = {
   uid: "",

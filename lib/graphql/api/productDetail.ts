@@ -5,6 +5,13 @@ import { normalizeProduct } from "@/utils/normalizeProduct";
 import { PRODUCT_DETAIL_QUERY } from "../queries/productQuery";
 import { GraphQLResponse } from "@/types/graphql";
 
+export class ProductNotFoundError extends Error {
+  constructor(uid: string) {
+    super(`Product not found: ${uid}`);
+    this.name = "ProductNotFoundError";
+  }
+}
+
 export async function fetchProductByUid(
   uid: string,
   fetchOptions?: FetchOptions,
@@ -24,7 +31,7 @@ export async function fetchProductByUid(
   const product = payload.result?.products?.[0];
 
   if (!product) {
-    throw new Error(`Product not found: ${uid}`);
+    throw new ProductNotFoundError(uid);
   }
 
   return normalizeProduct(product);
