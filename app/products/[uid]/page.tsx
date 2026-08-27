@@ -1,5 +1,5 @@
 import ProductDetailContent from "@/components/product/ProductDetailContent";
-import { fetchProductByUid } from "@/lib/graphql/queries/productDetail";
+import { fetchProductByUid } from "@/lib/graphql/api/productDetail";
 import { notFound } from "next/navigation";
 
 interface ProductDetailPageProps {

@@ -2,7 +2,7 @@ import ProductCard from "@/components/product/ProductCard";
 import ProductEmpty from "@/components/product/ProductEmpty";
 import { ProductFilters, ProductToolbar } from "@/components/filters";
 import Pagination from "@/components/ui/Pagination";
-import { fetchProductsList } from "@/lib/graphql/queries/productsList";
+import { fetchProductsList } from "@/lib/graphql/api/productsList";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 

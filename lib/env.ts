@@ -1,9 +1,16 @@
-const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
+import { z } from "zod";
 
-if (!endpoint) {
-  throw new Error(
-    "Missing NEXT_PUBLIC_GRAPHQL_ENDPOINT environment variable. Add it to .env.local.",
-  );
+const envSchema = z.object({
+  NEXT_PUBLIC_GRAPHQL_ENDPOINT: z.string().url(),
+});
+
+const parsedEnv = envSchema.safeParse({
+  NEXT_PUBLIC_GRAPHQL_ENDPOINT: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
+});
+
+if (!parsedEnv.success) {
+  throw new Error(`Invalid environment variables: ${parsedEnv.error.message}`);
 }
 
-export const GRAPHQL_ENDPOINT = endpoint;
+export const env = parsedEnv.data;
+export const GRAPHQL_ENDPOINT = env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
