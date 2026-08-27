@@ -1,6 +1,6 @@
 "use client";
 
-import { ProductFetchError } from "@/components/ui";
+import { ProductFetchError } from "@/components/product";
 
 const ProductsError = () => {
   return (
