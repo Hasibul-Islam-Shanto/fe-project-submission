@@ -1,4 +1,6 @@
-export { default as AvailabilityFilter } from "./AvailabilityFilter";
+export { default as FilterPanel } from "./FilterPanel";
+export { default as SortDropdown } from "./SortDropdown";
+export type { SortBy } from "./SortDropdown";
 export { default as CategoryFilter } from "./CategoryFilter";
 export { default as FilterSection } from "./FilterSection";
 export { default as PriceFilter } from "./PriceFilter";

@@ -44,6 +44,24 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | ------------------------------ | ------------------------------------ |
 | `NEXT_PUBLIC_GRAPHQL_ENDPOINT` | GraphQL API URL (see `.env.example`) |
 
+## Local mock GraphQL server (optional)
+
+When the real Walton Plaza API is down, a **local-only** mock lives in the
+sibling `mock-backend/mock-server/` folder (not inside this Next.js app).
+
+It is a documented dev convenience, **not part of the graded submission**.
+Do not copy it into this repo or treat it as core app code.
+
+1. `cd ../mock-backend/mock-server && npm install && npm run dev`
+2. In this app’s `.env.local`, temporarily set:
+
+```
+NEXT_PUBLIC_GRAPHQL_ENDPOINT=http://localhost:4000/graphql
+```
+
+3. Restart `npm run dev` here. Revert `.env.local` when the real backend
+   is available again.
+
 ## Project structure
 
 - `app/` — Next.js App Router pages and routes

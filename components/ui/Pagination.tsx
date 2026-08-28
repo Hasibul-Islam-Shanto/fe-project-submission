@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useTransition } from "react";
+import { useCallback } from "react";
 
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
+  onPageChange?: (page: number) => void;
 }
 
 function getPageNumbers(
@@ -38,28 +38,17 @@ function getPageNumbers(
   return pages;
 }
 
-const Pagination = ({ currentPage, totalPages }: PaginationProps) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
-
+const Pagination = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: PaginationProps) => {
   const goToPage = useCallback(
     (page: number) => {
       if (page < 1 || page > totalPages || page === currentPage) return;
-
-      const params = new URLSearchParams(searchParams.toString());
-      if (page === 1) {
-        params.delete("page");
-      } else {
-        params.set("page", String(page));
-      }
-
-      const query = params.toString();
-      startTransition(() => {
-        router.push(query ? `/products?${query}` : "/products");
-      });
+      onPageChange?.(page);
     },
-    [currentPage, router, searchParams, startTransition, totalPages],
+    [currentPage, onPageChange, totalPages],
   );
 
   if (totalPages <= 1) return null;
@@ -71,7 +60,7 @@ const Pagination = ({ currentPage, totalPages }: PaginationProps) => {
   return (
     <nav
       aria-label="Pagination"
-      className={`flex items-center justify-center gap-1 ${isPending ? "opacity-70" : ""}`}
+      className="flex items-center justify-center gap-1"
     >
       <button
         type="button"
