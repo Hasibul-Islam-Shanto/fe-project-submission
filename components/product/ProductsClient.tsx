@@ -1,155 +1,129 @@
 "use client";
 
-import FilterPanel, { type PriceRange } from "@/components/filters/FilterPanel";
-import SortDropdown, { type SortBy } from "@/components/filters/SortDropdown";
+import FilterPanel from "@/components/filters/FilterPanel";
+import SortDropdown from "@/components/filters/SortDropdown";
 import { ProductGridSkeleton } from "@/components/product/ProductCardSkeleton";
 import ProductCard from "@/components/product/ProductCard";
 import ProductEmpty from "@/components/product/ProductEmpty";
 import ProductFetchError from "@/components/product/ProductFetchError";
 import Pagination from "@/components/ui/Pagination";
-import { PRODUCTS_LIST_QUERY } from "@/lib/graphql/queries/productQuery";
-import { getPricing } from "@/lib/pricing";
-import type { GraphQLResponse } from "@/types/graphql";
-import type { ProductListItem } from "@/types/productList";
-import { normalizeProductListItem } from "@/utils/normalizeProduct";
+import type {
+  ProductListCategory,
+  ProductListFilters,
+  ProductListItem,
+  ProductSort,
+} from "@/types/productList";
+import { DEFAULT_PRODUCT_LIST_FILTERS } from "@/types/productList";
+import { isPriceRangeInvalid } from "@/utils/productFilters";
 import { SlidersHorizontal, X } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "urql";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchProductListAction } from "@/app/products/actions";
 
 interface ProductsClientProps {
   initialProducts: ProductListItem[];
   initialCount: number;
   initialPage: number;
+  initialCategories: ProductListCategory[];
+  supportsRatingSort: boolean;
   pageSize?: number;
-}
-
-function parseProductsListResult(data: unknown): {
-  products: ProductListItem[];
-  count: number;
-} | null {
-  const payload = (data as GraphQLResponse["data"])?.getProducts;
-
-  if (!payload || payload.statusCode !== 200) {
-    return null;
-  }
-
-  return {
-    products: (payload.result?.products ?? []).map(normalizeProductListItem),
-    count: payload.result?.count ?? 0,
-  };
 }
 
 const ProductsClient = ({
   initialProducts,
   initialCount,
   initialPage,
+  initialCategories,
+  supportsRatingSort,
   pageSize = 12,
 }: ProductsClientProps) => {
   const [page, setPage] = useState(initialPage);
-  const [priceRange, setPriceRange] = useState<PriceRange>({
-    min: null,
-    max: null,
-  });
-  const [sortBy, setSortBy] = useState<SortBy>("none");
+  const [filters, setFilters] = useState<ProductListFilters>(
+    DEFAULT_PRODUCT_LIST_FILTERS,
+  );
+  const [sortBy, setSortBy] = useState<ProductSort>("default");
+  const [products, setProducts] = useState(initialProducts);
+  const [count, setCount] = useState(initialCount);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const [queryResult] = useQuery({
-    query: PRODUCTS_LIST_QUERY,
-    variables: {
-      skip: (page - 1) * pageSize,
-      limit: pageSize,
-      filter: null,
-    },
-    pause: !hasInteracted,
-  });
-
-  const { products, count, loadFailed } = useMemo(() => {
-    if (!hasInteracted) {
-      return {
-        products: initialProducts,
-        count: initialCount,
-        loadFailed: false,
-      };
-    }
-
-    const parsed = parseProductsListResult(queryResult.data);
-
-    if (parsed) {
-      return { ...parsed, loadFailed: false };
-    }
-
-    if (queryResult.fetching) {
-      return {
-        products: [] as ProductListItem[],
-        count: initialCount,
-        loadFailed: false,
-      };
-    }
-
-    return {
-      products: [] as ProductListItem[],
-      count: 0,
-      loadFailed: Boolean(queryResult.error) || queryResult.data != null,
-    };
-  }, [
-    hasInteracted,
-    initialCount,
-    initialProducts,
-    queryResult.data,
-    queryResult.error,
-    queryResult.fetching,
-  ]);
-
-  const displayedProducts = useMemo(() => {
-    let result = products.filter((product) => {
-      const { sellingPrice } = getPricing(product);
-
-      if (priceRange.min !== null && sellingPrice < priceRange.min) {
-        return false;
-      }
-
-      if (priceRange.max !== null && sellingPrice > priceRange.max) {
-        return false;
-      }
-
-      return true;
-    });
-
-    if (sortBy === "price-asc") {
-      result = [...result].sort(
-        (a, b) => getPricing(a).sellingPrice - getPricing(b).sellingPrice,
-      );
-    } else if (sortBy === "price-desc") {
-      result = [...result].sort(
-        (a, b) => getPricing(b).sellingPrice - getPricing(a).sellingPrice,
-      );
-    }
-
-    return result;
-  }, [products, priceRange, sortBy]);
-
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
-  const isFetching = hasInteracted && queryResult.fetching;
+  const effectivePage = Math.min(page, totalPages);
+
+  useEffect(() => {
+    if (!hasInteracted) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadProducts = async () => {
+      setIsFetching(true);
+      setLoadFailed(false);
+
+      try {
+        const result = await fetchProductListAction({
+          skip: (effectivePage - 1) * pageSize,
+          limit: pageSize,
+          filters,
+          sort: sortBy,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        setProducts(result.products);
+        setCount(result.count);
+      } catch {
+        if (!cancelled) {
+          setLoadFailed(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsFetching(false);
+        }
+      }
+    };
+
+    void loadProducts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasInteracted, effectivePage, pageSize, filters, sortBy]);
 
   const handlePageChange = useCallback((nextPage: number) => {
     setHasInteracted(true);
     setPage(nextPage);
   }, []);
 
-  const handlePriceRangeChange = useCallback((range: PriceRange) => {
-    setPriceRange(range);
+  const handleFiltersChange = useCallback((nextFilters: ProductListFilters) => {
+    if (isPriceRangeInvalid(nextFilters)) {
+      return;
+    }
+
+    setHasInteracted(true);
+    setPage(1);
+    setFilters(nextFilters);
   }, []);
 
-  const handleSortChange = useCallback((value: SortBy) => {
-    setSortBy(value);
+  const handleSortChange = useCallback((nextSort: ProductSort) => {
+    setHasInteracted(true);
+    setPage(1);
+    setSortBy(nextSort);
   }, []);
 
-  const filterPanel = (
-    <FilterPanel
-      priceRange={priceRange}
-      onPriceRangeChange={handlePriceRangeChange}
-    />
+  const filterPanel = useMemo(
+    () => (
+      <FilterPanel
+        filters={filters}
+        categories={initialCategories}
+        onFiltersChange={handleFiltersChange}
+      />
+    ),
+    [filters, initialCategories, handleFiltersChange],
   );
 
   return (
@@ -182,7 +156,11 @@ const ProductsClient = ({
               <SlidersHorizontal className="h-4 w-4 text-[var(--color-text-accent)]" />
               Filters
             </button>
-            <SortDropdown value={sortBy} onChange={handleSortChange} />
+            <SortDropdown
+              value={sortBy}
+              supportsRatingSort={supportsRatingSort}
+              onChange={handleSortChange}
+            />
           </div>
         </div>
 
@@ -191,12 +169,12 @@ const ProductsClient = ({
             title="Couldn't load products"
             message="Something went wrong while updating the product list. Please try again."
           />
-        ) : isFetching && displayedProducts.length === 0 ? (
+        ) : isFetching && products.length === 0 ? (
           <ProductGridSkeleton
             count={pageSize}
             className="grid-cols-2 md:grid-cols-2 xl:grid-cols-3"
           />
-        ) : displayedProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <ProductEmpty
             title="No products found"
             message="We couldn't find any products matching your criteria. Try adjusting filters or check back later for new arrivals."
@@ -205,12 +183,12 @@ const ProductsClient = ({
           <div
             className={`grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3 ${isFetching ? "opacity-70" : ""}`}
           >
-            {displayedProducts.map((product, index) => (
+            {products.map((product, index) => (
               <ProductCard
                 key={product.uid}
                 product={product}
                 animationDelay={index * 80}
-                priority={index === 0 && page === 1}
+                priority={index === 0 && effectivePage === 1}
               />
             ))}
           </div>
@@ -218,7 +196,7 @@ const ProductsClient = ({
 
         <div className="mt-10">
           <Pagination
-            currentPage={page}
+            currentPage={effectivePage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
           />
@@ -247,10 +225,7 @@ const ProductsClient = ({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <FilterPanel
-              priceRange={priceRange}
-              onPriceRangeChange={handlePriceRangeChange}
-            />
+            {filterPanel}
           </div>
         </div>
       )}

@@ -1,47 +1,94 @@
 "use client";
 
 import { SlidersHorizontal } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import FilterSection from "@/components/filters/FilterSection";
+import type {
+  ProductListCategory,
+  ProductListFilters,
+} from "@/types/productList";
+import { DEFAULT_PRODUCT_LIST_FILTERS } from "@/types/productList";
 
-export type PriceRange = {
-  min: number | null;
-  max: number | null;
-};
+const PRICE_DEBOUNCE_MS = 600;
 
 interface FilterPanelProps {
-  priceRange: PriceRange;
-  onPriceRangeChange: (range: PriceRange) => void;
+  filters: ProductListFilters;
+  categories: ProductListCategory[];
+  onFiltersChange: (filters: ProductListFilters) => void;
 }
 
 const inputClassName =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none transition-colors placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-border-hover)]";
 
-const FilterPanel = ({ priceRange, onPriceRangeChange }: FilterPanelProps) => {
-  const [minInput, setMinInput] = useState(priceRange.min?.toString() ?? "");
-  const [maxInput, setMaxInput] = useState(priceRange.max?.toString() ?? "");
+const selectClassName =
+  "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none transition-colors focus:border-[var(--color-border-hover)]";
+
+function parsePriceInput(value: string): number | null {
+  if (value.trim() === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+const FilterPanel = ({
+  filters,
+  categories,
+  onFiltersChange,
+}: FilterPanelProps) => {
+  const [minInput, setMinInput] = useState(filters.minPrice?.toString() ?? "");
+  const [maxInput, setMaxInput] = useState(filters.maxPrice?.toString() ?? "");
+  const filtersRef = useRef(filters);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const min = minInput.trim() === "" ? null : Number(minInput);
-      const max = maxInput.trim() === "" ? null : Number(maxInput);
-      const parsedMin = min !== null && Number.isFinite(min) ? min : null;
-      const parsedMax = max !== null && Number.isFinite(max) ? max : null;
+    filtersRef.current = filters;
+  }, [filters]);
 
-      if (parsedMin === priceRange.min && parsedMax === priceRange.max) {
+  const parsedDraftMin = parsePriceInput(minInput);
+  const parsedDraftMax = parsePriceInput(maxInput);
+  const priceRangeInvalid =
+    parsedDraftMin !== null &&
+    parsedDraftMax !== null &&
+    parsedDraftMin > parsedDraftMax;
+
+  const commitPriceFilters = useCallback(
+    (minPrice: number | null, maxPrice: number | null) => {
+      if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
         return;
       }
 
-      onPriceRangeChange({ min: parsedMin, max: parsedMax });
-    }, 400);
+      const current = filtersRef.current;
+
+      if (minPrice === current.minPrice && maxPrice === current.maxPrice) {
+        return;
+      }
+
+      onFiltersChange({
+        ...current,
+        minPrice,
+        maxPrice,
+      });
+    },
+    [onFiltersChange],
+  );
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      commitPriceFilters(parsedDraftMin, parsedDraftMax);
+    }, PRICE_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [minInput, maxInput, onPriceRangeChange, priceRange.min, priceRange.max]);
+  }, [minInput, maxInput, parsedDraftMin, parsedDraftMax, commitPriceFilters]);
+
+  const handlePriceBlur = () => {
+    commitPriceFilters(parsedDraftMin, parsedDraftMax);
+  };
 
   const handleClear = () => {
     setMinInput("");
     setMaxInput("");
-    onPriceRangeChange({ min: null, max: null });
+    onFiltersChange({ ...DEFAULT_PRODUCT_LIST_FILTERS });
   };
 
   return (
@@ -64,7 +111,9 @@ const FilterPanel = ({ priceRange, onPriceRangeChange }: FilterPanelProps) => {
               placeholder="0"
               value={minInput}
               onChange={(event) => setMinInput(event.target.value)}
+              onBlur={handlePriceBlur}
               className={inputClassName}
+              aria-invalid={priceRangeInvalid}
             />
           </label>
           <label className="space-y-1">
@@ -76,10 +125,63 @@ const FilterPanel = ({ priceRange, onPriceRangeChange }: FilterPanelProps) => {
               placeholder="Any"
               value={maxInput}
               onChange={(event) => setMaxInput(event.target.value)}
+              onBlur={handlePriceBlur}
               className={inputClassName}
+              aria-invalid={priceRangeInvalid}
             />
           </label>
         </div>
+        {priceRangeInvalid && (
+          <p className="mt-2 text-xs text-[var(--color-aurora-5)]">
+            Minimum price cannot exceed maximum price.
+          </p>
+        )}
+      </FilterSection>
+
+      {categories.length > 0 && (
+        <FilterSection title="Category">
+          <label className="block space-y-1">
+            <span className="sr-only">Category</span>
+            <select
+              value={filters.categoryUid ?? ""}
+              onChange={(event) =>
+                onFiltersChange({
+                  ...filters,
+                  categoryUid: event.target.value || null,
+                })
+              }
+              className={selectClassName}
+            >
+              <option value="">All categories</option>
+              {categories.map((category) => (
+                <option key={category.uid} value={category.uid}>
+                  {category.enName}
+                </option>
+              ))}
+            </select>
+          </label>
+        </FilterSection>
+      )}
+
+      <FilterSection title="Availability">
+        <label className="block space-y-1">
+          <span className="sr-only">Availability</span>
+          <select
+            value={filters.availability}
+            onChange={(event) =>
+              onFiltersChange({
+                ...filters,
+                availability: event.target
+                  .value as ProductListFilters["availability"],
+              })
+            }
+            className={selectClassName}
+          >
+            <option value="all">All products</option>
+            <option value="in-stock">In stock</option>
+            <option value="out-of-stock">Out of stock</option>
+          </select>
+        </label>
       </FilterSection>
 
       <button
