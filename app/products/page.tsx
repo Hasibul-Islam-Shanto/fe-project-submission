@@ -1,5 +1,10 @@
 import ProductsClient from "@/components/product/ProductsClient";
-import { fetchProductsList } from "@/lib/graphql/api/productsList";
+import { getProductListCapabilities } from "@/lib/graphql/productListCapabilities";
+import {
+  queryProductList,
+  queryProductListCategories,
+} from "@/lib/products/queryProductList";
+import { DEFAULT_PRODUCT_LIST_FILTERS } from "@/types/productList";
 import { redirect } from "next/navigation";
 
 const PAGE_SIZE = 6;
@@ -13,10 +18,16 @@ const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
   const currentPage = Math.max(1, Number(pageParam) || 1);
   const skip = (currentPage - 1) * PAGE_SIZE;
 
-  const { products, count } = await fetchProductsList({
-    skip,
-    limit: PAGE_SIZE,
-  });
+  const [capabilities, categories, { products, count }] = await Promise.all([
+    getProductListCapabilities(),
+    queryProductListCategories(),
+    queryProductList({
+      skip,
+      limit: PAGE_SIZE,
+      filters: DEFAULT_PRODUCT_LIST_FILTERS,
+      sort: "default",
+    }),
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
@@ -37,6 +48,8 @@ const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
         initialProducts={products}
         initialCount={count}
         initialPage={currentPage}
+        initialCategories={categories}
+        supportsRatingSort={capabilities.extendedProductFields}
         pageSize={PAGE_SIZE}
       />
     </div>

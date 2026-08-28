@@ -1,27 +1,44 @@
 "use client";
 
 import { ArrowDownUp, ChevronDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ProductSort } from "@/types/productList";
 
-export type SortBy = "none" | "price-asc" | "price-desc";
-
-const SORT_OPTIONS = [
-  { value: "none" as const, label: "Default" },
+const BASE_SORT_OPTIONS = [
+  { value: "default" as const, label: "Default" },
   { value: "price-asc" as const, label: "Price: Low to High" },
   { value: "price-desc" as const, label: "Price: High to Low" },
 ];
 
+const RATING_SORT_OPTIONS = [
+  { value: "rating-desc" as const, label: "Rating: High to Low" },
+  { value: "rating-asc" as const, label: "Rating: Low to High" },
+];
+
 interface SortDropdownProps {
-  value: SortBy;
-  onChange: (value: SortBy) => void;
+  value: ProductSort;
+  supportsRatingSort: boolean;
+  onChange: (value: ProductSort) => void;
 }
 
-const SortDropdown = ({ value, onChange }: SortDropdownProps) => {
+const SortDropdown = ({
+  value,
+  supportsRatingSort,
+  onChange,
+}: SortDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const sortOptions = useMemo(
+    () =>
+      supportsRatingSort
+        ? [...BASE_SORT_OPTIONS, ...RATING_SORT_OPTIONS]
+        : BASE_SORT_OPTIONS,
+    [supportsRatingSort],
+  );
+
   const selectedLabel =
-    SORT_OPTIONS.find((option) => option.value === value)?.label ?? "Default";
+    sortOptions.find((option) => option.value === value)?.label ?? "Default";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,6 +53,15 @@ const SortDropdown = ({ value, onChange }: SortDropdownProps) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (
+      !supportsRatingSort &&
+      (value === "rating-asc" || value === "rating-desc")
+    ) {
+      onChange("default");
+    }
+  }, [supportsRatingSort, value, onChange]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -60,7 +86,7 @@ const SortDropdown = ({ value, onChange }: SortDropdownProps) => {
           aria-label="Sort products"
           className="absolute right-0 z-20 mt-2 min-w-[220px] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] py-1 shadow-[var(--glass-shadow)]"
         >
-          {SORT_OPTIONS.map((option) => {
+          {sortOptions.map((option) => {
             const isActive = value === option.value;
 
             return (
