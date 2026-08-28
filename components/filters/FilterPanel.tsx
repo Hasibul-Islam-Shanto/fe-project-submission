@@ -17,10 +17,7 @@ interface FilterPanelProps {
 const inputClassName =
   "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none transition-colors placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-border-hover)]";
 
-const FilterPanel = ({
-  priceRange,
-  onPriceRangeChange,
-}: FilterPanelProps) => {
+const FilterPanel = ({ priceRange, onPriceRangeChange }: FilterPanelProps) => {
   const [minInput, setMinInput] = useState(priceRange.min?.toString() ?? "");
   const [maxInput, setMaxInput] = useState(priceRange.max?.toString() ?? "");
 

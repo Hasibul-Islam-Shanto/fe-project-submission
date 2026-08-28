@@ -130,8 +130,6 @@ const ProductsClient = ({
   }, [products, priceRange, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
-  const hasClientSideFilters =
-    priceRange.min !== null || priceRange.max !== null || sortBy !== "none";
   const isFetching = hasInteracted && queryResult.fetching;
 
   const handlePageChange = useCallback((nextPage: number) => {
@@ -157,9 +155,7 @@ const ProductsClient = ({
   return (
     <div className="flex gap-8">
       <aside className="hidden w-64 shrink-0 lg:block">
-        <div className="sticky top-24">
-          {!mobileFiltersOpen && filterPanel}
-        </div>
+        <div className="sticky top-24">{!mobileFiltersOpen && filterPanel}</div>
       </aside>
 
       <div className="min-w-0 flex-1">
@@ -189,13 +185,6 @@ const ProductsClient = ({
             <SortDropdown value={sortBy} onChange={handleSortChange} />
           </div>
         </div>
-
-        {hasClientSideFilters && products.length > 0 && (
-          <p className="mb-4 text-xs text-[var(--color-text-muted)]">
-            Showing {displayedProducts.length} of {products.length} results on
-            this page. Price and sort apply to the current page only.
-          </p>
-        )}
 
         {loadFailed ? (
           <ProductFetchError
