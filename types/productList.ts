@@ -13,11 +13,13 @@ export interface ProductListItem {
 }
 
 export interface ProductListVariant {
+  uid: string;
+  ebsItemCode: string;
   mrpPrice: number;
   quantity: number;
   discount: {
     amount: number;
     value: number;
-    type: "PERCENTAGE" | "FLAT";
+    type: "PERCENTAGE" | "FLAT" | "NOT_AVAILABLE";
   } | null;
 }

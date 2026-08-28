@@ -68,6 +68,8 @@ function normalizeListVariant(raw: unknown): ProductListVariant {
   const mrpPrice = normalizeMrpPrice(variant.mrpPrice);
 
   return {
+    uid: variant.uid ?? "",
+    ebsItemCode: variant.ebsItemCode ?? "",
     mrpPrice,
     quantity: variant.quantity ?? 0,
     discount: mrpPrice > 0 ? (variant.discount ?? null) : null,

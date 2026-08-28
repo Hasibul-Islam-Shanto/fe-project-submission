@@ -15,6 +15,8 @@ export const PRODUCTS_LIST_QUERY = `
             url
           }
           variants {
+            uid
+            ebsItemCode
             mrpPrice
             quantity
             discount {
