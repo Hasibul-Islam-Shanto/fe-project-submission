@@ -8,6 +8,8 @@ import {
   getVariantDisplayImages,
   isInStock,
 } from "@/utils/productHelper";
+import { buildCartItem } from "@/lib/cart/buildCartItem";
+import { useCartStore } from "@/store/useCartStore";
 import LabeledInfoSection from "./LabeledInfoSection";
 import ImageGallery from "./ImageGallery";
 import PriceDisplay from "./PriceDisplay";
@@ -19,6 +21,8 @@ interface ProductDetailsContainerProps {
 }
 
 const ProductDetailsContainer = ({ product }: ProductDetailsContainerProps) => {
+  const addItem = useCartStore((state) => state.addItem);
+
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(() =>
     getDefaultVariantIndex(product.variants),
   );
@@ -35,6 +39,18 @@ const ProductDetailsContainer = ({ product }: ProductDetailsContainerProps) => {
     label: tab.label,
     content: <LabeledInfoSection items={tab.sections} />,
   }));
+
+  const handleAddToCart = () => {
+    const cartItem = buildCartItem(
+      product,
+      selectedVariant,
+      selectedVariantIndex,
+    );
+
+    if (!cartItem) return;
+
+    addItem(cartItem);
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-2">
@@ -62,6 +78,7 @@ const ProductDetailsContainer = ({ product }: ProductDetailsContainerProps) => {
           <button
             type="button"
             disabled={outOfStock}
+            onClick={handleAddToCart}
             className={`w-full rounded-xl px-6 py-3.5 text-sm font-semibold transition-all duration-200 sm:w-auto ${
               outOfStock
                 ? "cursor-not-allowed border border-[var(--color-border)] bg-[var(--color-bg-tertiary)] text-[var(--color-text-muted)]"

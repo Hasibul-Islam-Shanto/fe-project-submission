@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ShoppingBag, ShoppingCart } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
+import { CartButton } from "@/components/cart";
 
 const Header = () => {
   return (
@@ -20,16 +21,7 @@ const Header = () => {
           </span>
         </Link>
 
-        <button
-          type="button"
-          className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition-all duration-200 hover:border-[var(--color-border-hover)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]"
-          aria-label="Shopping cart"
-        >
-          <ShoppingCart className="h-[1.125rem] w-[1.125rem]" />
-          <span className="absolute -right-1 -top-1 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[10px] font-bold text-white ring-2 ring-[var(--color-bg-primary)]">
-            0
-          </span>
-        </button>
+        <CartButton />
       </div>
     </header>
   );

@@ -31,7 +31,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "urql": "^5.0.4",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.2",
