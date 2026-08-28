@@ -1,39 +1,42 @@
 import ProductsClient from "@/components/product/ProductsClient";
-import { getProductListCapabilities } from "@/lib/graphql/productListCapabilities";
-import {
-  queryProductList,
-  queryProductListCategories,
-} from "@/lib/products/queryProductList";
-import { DEFAULT_PRODUCT_LIST_FILTERS } from "@/types/productList";
-import { redirect } from "next/navigation";
+import { parseProductListSearchParams } from "@/lib/products/parseProductListSearchParams";
+import { queryProductList } from "@/lib/products/queryProductList";
+import { buildProductListUrl } from "@/utils/productListUrl";
+import { redirect, RedirectType } from "next/navigation";
 
 const PAGE_SIZE = 6;
 
 interface ProductsPageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
-  const { page: pageParam } = await searchParams;
-  const currentPage = Math.max(1, Number(pageParam) || 1);
-  const skip = (currentPage - 1) * PAGE_SIZE;
+  const params = await searchParams;
+  const { filters, sort, page } = parseProductListSearchParams(params);
 
-  const [capabilities, categories, { products, count }] = await Promise.all([
-    getProductListCapabilities(),
-    queryProductListCategories(),
-    queryProductList({
-      skip,
-      limit: PAGE_SIZE,
-      filters: DEFAULT_PRODUCT_LIST_FILTERS,
-      sort: "default",
-    }),
-  ]);
+  const { count } = await queryProductList({
+    skip: 0,
+    limit: 1,
+    filters,
+    sort,
+  });
 
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+  const effectivePage = count === 0 ? 1 : Math.min(page, totalPages);
 
-  if (count > 0 && currentPage > totalPages) {
-    redirect(totalPages === 1 ? "/products" : `/products?page=${totalPages}`);
+  if (page !== effectivePage) {
+    redirect(
+      buildProductListUrl({ filters, sort, page: effectivePage }),
+      RedirectType.replace,
+    );
   }
+
+  const { products } = await queryProductList({
+    skip: (effectivePage - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    filters,
+    sort,
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-2">
@@ -45,11 +48,11 @@ const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
       </div>
 
       <ProductsClient
-        initialProducts={products}
-        initialCount={count}
-        initialPage={currentPage}
-        initialCategories={categories}
-        supportsRatingSort={capabilities.extendedProductFields}
+        products={products}
+        count={count}
+        page={effectivePage}
+        filters={filters}
+        sort={sort}
         pageSize={PAGE_SIZE}
       />
     </div>

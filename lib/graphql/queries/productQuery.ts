@@ -35,52 +35,6 @@ export const PRODUCTS_LIST_QUERY = `
   }
 `;
 
-export const PRODUCTS_LIST_EXTENDED_QUERY = `
-  query ProductsListExtended(
-    $skip: Int!
-    $limit: Int!
-    $filter: ProductFilterInput
-    $sort: ProductStockSort
-  ) {
-    getProducts(
-      pagination: { skip: $skip, limit: $limit }
-      filter: $filter
-      sort: $sort
-    ) {
-      message
-      statusCode
-      result {
-        count
-        products {
-          ${PRODUCT_LIST_FIELDS}
-          category {
-            uid
-            enName
-          }
-          rating {
-            average
-          }
-        }
-      }
-    }
-  }
-`;
-
-export const PRODUCT_CATEGORIES_QUERY = `
-  query ProductCategories {
-    getCategories {
-      message
-      statusCode
-      result {
-        categories {
-          uid
-          enName
-        }
-      }
-    }
-  }
-`;
-
 export const PRODUCT_DETAIL_QUERY = `
   query ProductDetail($uid: String!) {
     getProducts(

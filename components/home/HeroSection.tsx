@@ -46,7 +46,7 @@ const HeroSection = () => {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href="/products?page=1"
+            href="/products"
             className="inline-flex w-full items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-3.5 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-border-hover)] hover:bg-[var(--color-surface-hover)] sm:w-auto"
           >
             View all deals

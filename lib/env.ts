@@ -12,5 +12,4 @@ if (!parsedEnv.success) {
   throw new Error(`Invalid environment variables: ${parsedEnv.error.message}`);
 }
 
-export const env = parsedEnv.data;
-export const GRAPHQL_ENDPOINT = env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
+export const GRAPHQL_ENDPOINT = parsedEnv.data.NEXT_PUBLIC_GRAPHQL_ENDPOINT;

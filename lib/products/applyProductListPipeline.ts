@@ -1,5 +1,4 @@
 import { getPricing } from "@/lib/pricing";
-import type { ProductListCapabilities } from "@/lib/graphql/productListCapabilities";
 import type {
   ProductListFilters,
   ProductListItem,
@@ -41,18 +40,6 @@ function matchesAvailabilityFilter(
   return !inStock;
 }
 
-function matchesCategoryFilter(
-  product: ProductListItem,
-  filters: ProductListFilters,
-  capabilities: ProductListCapabilities,
-): boolean {
-  if (!filters.categoryUid || capabilities.categoryFilter) {
-    return true;
-  }
-
-  return product.category?.uid === filters.categoryUid;
-}
-
 function sortProducts(
   products: ProductListItem[],
   sort: ProductSort,
@@ -75,18 +62,6 @@ function sortProducts(
     );
   }
 
-  if (sort === "rating-asc") {
-    return sorted.sort(
-      (a, b) => (a.rating?.average ?? 0) - (b.rating?.average ?? 0),
-    );
-  }
-
-  if (sort === "rating-desc") {
-    return sorted.sort(
-      (a, b) => (b.rating?.average ?? 0) - (a.rating?.average ?? 0),
-    );
-  }
-
   return sorted;
 }
 
@@ -97,20 +72,17 @@ export function applyProductListPipeline(
     sort,
     skip,
     limit,
-    capabilities,
   }: {
     filters: ProductListFilters;
     sort: ProductSort;
     skip: number;
     limit: number;
-    capabilities: ProductListCapabilities;
   },
 ): { products: ProductListItem[]; count: number } {
   const filtered = products.filter(
     (product) =>
       matchesPriceFilter(product, filters) &&
-      matchesAvailabilityFilter(product, filters) &&
-      matchesCategoryFilter(product, filters, capabilities),
+      matchesAvailabilityFilter(product, filters),
   );
 
   const sorted = sortProducts(filtered, sort);

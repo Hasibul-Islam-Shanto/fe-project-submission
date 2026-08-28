@@ -61,39 +61,31 @@ To test failure handling locally, set `NEXT_PUBLIC_CART_MOCK_FAIL=true` in `.env
 
 ## Product list filtering
 
-The products page applies filters and sorting to the **complete product dataset** before pagination:
+The products page is URL-driven. Filter, sort, and pagination state live in query parameters:
 
 ```text
-Fetch products → filter all matches → sort → count → paginate → render
+/products?minPrice=1000&maxPrice=50000&availability=in-stock&sort=price-asc&page=2
 ```
 
-Both the server-rendered page and client refetches use the shared `queryProductList` helper in `lib/products/queryProductList.ts`.
+The server parses those params, loads a cached product catalog, applies the in-memory pipeline, and renders the page. Client controls update the URL via `router.replace`; there is no client-side refetch effect.
 
 ### Architecture
 
-- **UI state** lives in `ProductsClient` (`filters`, `sortBy`, `page`).
-- **Conversion helpers** in `utils/productFilters.ts` map UI values to GraphQL inputs.
-- **Pipeline** in `lib/products/applyProductListPipeline.ts` handles price, availability, and rating sort client-side.
-- **Capabilities** in `lib/graphql/productListCapabilities.ts` detect which features the connected GraphQL endpoint supports.
+```text
+URL params → parseProductListSearchParams → getProductCatalog (cached)
+  → applyProductListPipeline → render ProductsClient
+```
 
-### API capability differences
+- **Catalog cache** — `lib/products/getProductCatalog.ts` fetches active products once per process (5-minute TTL, max 1,000 products).
+- **Pipeline** — `lib/products/applyProductListPipeline.ts` handles price range, availability, and price sort before pagination.
+- **URL helpers** — `lib/products/parseProductListSearchParams.ts` and `utils/productListUrl.ts`.
 
-| Feature             | Local mock                              | Walton API                                     |
-| ------------------- | --------------------------------------- | ---------------------------------------------- |
-| Price filter        | Client-side pipeline                    | Client-side pipeline                           |
-| Availability filter | Client-side pipeline                    | Client-side pipeline                           |
-| Category filter     | Client-side (when category data exists) | Server-side via `categoryUid`                  |
-| Price sort          | Client-side pipeline                    | Server-side via `ProductStockSort` or pipeline |
-| Rating sort         | Hidden (no rating field)                | Client-side when `rating.average` is available |
-| Categories list     | Not available                           | `getCategories` query                          |
-
-When filters or sorting are active, the app fetches the full matching product set and applies the pipeline before slicing the requested page. This is correct for small evaluation datasets but should be replaced with full server-side filtering when the catalog grows.
+The Walton API only supports `uid`, `posItemCode`, and `isActive` filters with skip/limit pagination. Price, availability, and sort are applied in-app against the cached catalog.
 
 ### Filter controls
 
-- **Price range** — debounced min/max inputs; invalid ranges show an error and do not trigger a refetch.
-- **Category** — shown when the API provides a categories query.
+- **Price range** — debounced min/max inputs; invalid ranges show an error and do not navigate.
 - **Availability** — all / in-stock / out-of-stock.
-- **Sort** — price options always; rating options only when the API exposes rating data.
+- **Sort** — default, price low-to-high, price high-to-low.
 
 Changing any filter or sort resets pagination to page 1.
