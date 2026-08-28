@@ -2,128 +2,94 @@
 
 import FilterPanel from "@/components/filters/FilterPanel";
 import SortDropdown from "@/components/filters/SortDropdown";
-import { ProductGridSkeleton } from "@/components/product/ProductCardSkeleton";
 import ProductCard from "@/components/product/ProductCard";
 import ProductEmpty from "@/components/product/ProductEmpty";
-import ProductFetchError from "@/components/product/ProductFetchError";
 import Pagination from "@/components/ui/Pagination";
 import type {
-  ProductListCategory,
   ProductListFilters,
   ProductListItem,
   ProductSort,
 } from "@/types/productList";
-import { DEFAULT_PRODUCT_LIST_FILTERS } from "@/types/productList";
 import { isPriceRangeInvalid } from "@/utils/productFilters";
+import { buildProductListUrl } from "@/utils/productListUrl";
 import { SlidersHorizontal, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchProductListAction } from "@/app/products/actions";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 
 interface ProductsClientProps {
-  initialProducts: ProductListItem[];
-  initialCount: number;
-  initialPage: number;
-  initialCategories: ProductListCategory[];
-  supportsRatingSort: boolean;
-  pageSize?: number;
+  products: ProductListItem[];
+  count: number;
+  page: number;
+  filters: ProductListFilters;
+  sort: ProductSort;
+  pageSize: number;
 }
 
 const ProductsClient = ({
-  initialProducts,
-  initialCount,
-  initialPage,
-  initialCategories,
-  supportsRatingSort,
-  pageSize = 12,
+  products,
+  count,
+  page,
+  filters,
+  sort,
+  pageSize,
 }: ProductsClientProps) => {
-  const [page, setPage] = useState(initialPage);
-  const [filters, setFilters] = useState<ProductListFilters>(
-    DEFAULT_PRODUCT_LIST_FILTERS,
-  );
-  const [sortBy, setSortBy] = useState<ProductSort>("default");
-  const [products, setProducts] = useState(initialProducts);
-  const [count, setCount] = useState(initialCount);
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const router = useRouter();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
   const effectivePage = Math.min(page, totalPages);
 
-  useEffect(() => {
-    if (!hasInteracted) {
-      return;
-    }
+  const navigate = useCallback(
+    (next: {
+      filters?: ProductListFilters;
+      sort?: ProductSort;
+      page?: number;
+    }) => {
+      router.replace(
+        buildProductListUrl({
+          filters: next.filters ?? filters,
+          sort: next.sort ?? sort,
+          page: next.page ?? page,
+        }),
+      );
+    },
+    [router, filters, sort, page],
+  );
 
-    let cancelled = false;
+  const handlePageChange = useCallback(
+    (nextPage: number) => {
+      navigate({ page: nextPage });
+    },
+    [navigate],
+  );
 
-    const loadProducts = async () => {
-      setIsFetching(true);
-      setLoadFailed(false);
-
-      try {
-        const result = await fetchProductListAction({
-          skip: (effectivePage - 1) * pageSize,
-          limit: pageSize,
-          filters,
-          sort: sortBy,
-        });
-
-        if (cancelled) {
-          return;
-        }
-
-        setProducts(result.products);
-        setCount(result.count);
-      } catch {
-        if (!cancelled) {
-          setLoadFailed(true);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsFetching(false);
-        }
+  const handleFiltersChange = useCallback(
+    (nextFilters: ProductListFilters) => {
+      if (isPriceRangeInvalid(nextFilters)) {
+        return;
       }
-    };
 
-    void loadProducts();
+      navigate({ filters: nextFilters, page: 1 });
+    },
+    [navigate],
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [hasInteracted, effectivePage, pageSize, filters, sortBy]);
-
-  const handlePageChange = useCallback((nextPage: number) => {
-    setHasInteracted(true);
-    setPage(nextPage);
-  }, []);
-
-  const handleFiltersChange = useCallback((nextFilters: ProductListFilters) => {
-    if (isPriceRangeInvalid(nextFilters)) {
-      return;
-    }
-
-    setHasInteracted(true);
-    setPage(1);
-    setFilters(nextFilters);
-  }, []);
-
-  const handleSortChange = useCallback((nextSort: ProductSort) => {
-    setHasInteracted(true);
-    setPage(1);
-    setSortBy(nextSort);
-  }, []);
+  const handleSortChange = useCallback(
+    (nextSort: ProductSort) => {
+      navigate({ sort: nextSort, page: 1 });
+    },
+    [navigate],
+  );
 
   const filterPanel = useMemo(
     () => (
       <FilterPanel
+        key={`${filters.minPrice ?? ""}-${filters.maxPrice ?? ""}-${filters.availability}`}
         filters={filters}
-        categories={initialCategories}
         onFiltersChange={handleFiltersChange}
       />
     ),
-    [filters, initialCategories, handleFiltersChange],
+    [filters, handleFiltersChange],
   );
 
   return (
@@ -140,11 +106,6 @@ const ProductsClient = ({
               {count}
             </span>{" "}
             products
-            {isFetching && (
-              <span className="ml-2 text-[var(--color-text-muted)]">
-                (Updating…)
-              </span>
-            )}
           </p>
 
           <div className="flex items-center gap-3">
@@ -156,33 +117,17 @@ const ProductsClient = ({
               <SlidersHorizontal className="h-4 w-4 text-[var(--color-text-accent)]" />
               Filters
             </button>
-            <SortDropdown
-              value={sortBy}
-              supportsRatingSort={supportsRatingSort}
-              onChange={handleSortChange}
-            />
+            <SortDropdown value={sort} onChange={handleSortChange} />
           </div>
         </div>
 
-        {loadFailed ? (
-          <ProductFetchError
-            title="Couldn't load products"
-            message="Something went wrong while updating the product list. Please try again."
-          />
-        ) : isFetching && products.length === 0 ? (
-          <ProductGridSkeleton
-            count={pageSize}
-            className="grid-cols-2 md:grid-cols-2 xl:grid-cols-3"
-          />
-        ) : products.length === 0 ? (
+        {products.length === 0 ? (
           <ProductEmpty
             title="No products found"
             message="We couldn't find any products matching your criteria. Try adjusting filters or check back later for new arrivals."
           />
         ) : (
-          <div
-            className={`grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3 ${isFetching ? "opacity-70" : ""}`}
-          >
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
             {products.map((product, index) => (
               <ProductCard
                 key={product.uid}

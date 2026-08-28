@@ -102,35 +102,10 @@ export function normalizeProduct(raw: unknown): Product {
   };
 }
 
-function normalizeCategory(
-  raw: { uid?: string | null; enName?: string | null } | null | undefined,
-): ProductListItem["category"] {
-  if (!raw?.uid) {
-    return null;
-  }
-
-  return {
-    uid: raw.uid,
-    enName: raw.enName ?? "",
-  };
-}
-
-function normalizeRating(
-  raw: { average?: number | null } | null | undefined,
-): ProductListItem["rating"] {
-  if (raw?.average == null || !Number.isFinite(raw.average)) {
-    return null;
-  }
-
-  return { average: raw.average };
-}
-
 export function normalizeProductListItem(raw: unknown): ProductListItem {
   const product = (raw ?? {}) as Partial<ProductListItem> & {
     images?: Array<{ url?: string | null } | null> | null;
     variants?: unknown[] | null;
-    category?: { uid?: string | null; enName?: string | null } | null;
-    rating?: { average?: number | null } | null;
   };
 
   return {
@@ -140,7 +115,5 @@ export function normalizeProductListItem(raw: unknown): ProductListItem {
     variants: asArray(product.variants)
       .filter((variant) => variant != null)
       .map(normalizeListVariant),
-    category: normalizeCategory(product.category),
-    rating: normalizeRating(product.rating),
   };
 }

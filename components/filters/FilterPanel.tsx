@@ -3,17 +3,14 @@
 import { SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import FilterSection from "@/components/filters/FilterSection";
-import type {
-  ProductListCategory,
-  ProductListFilters,
-} from "@/types/productList";
+import type { ProductListFilters } from "@/types/productList";
 import { DEFAULT_PRODUCT_LIST_FILTERS } from "@/types/productList";
+import { isPriceRangeInvalid } from "@/utils/productFilters";
 
 const PRICE_DEBOUNCE_MS = 600;
 
 interface FilterPanelProps {
   filters: ProductListFilters;
-  categories: ProductListCategory[];
   onFiltersChange: (filters: ProductListFilters) => void;
 }
 
@@ -32,11 +29,7 @@ function parsePriceInput(value: string): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
-const FilterPanel = ({
-  filters,
-  categories,
-  onFiltersChange,
-}: FilterPanelProps) => {
+const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
   const [minInput, setMinInput] = useState(filters.minPrice?.toString() ?? "");
   const [maxInput, setMaxInput] = useState(filters.maxPrice?.toString() ?? "");
   const filtersRef = useRef(filters);
@@ -47,14 +40,15 @@ const FilterPanel = ({
 
   const parsedDraftMin = parsePriceInput(minInput);
   const parsedDraftMax = parsePriceInput(maxInput);
-  const priceRangeInvalid =
-    parsedDraftMin !== null &&
-    parsedDraftMax !== null &&
-    parsedDraftMin > parsedDraftMax;
+  const priceRangeInvalid = isPriceRangeInvalid({
+    ...filters,
+    minPrice: parsedDraftMin,
+    maxPrice: parsedDraftMax,
+  });
 
   const commitPriceFilters = useCallback(
     (minPrice: number | null, maxPrice: number | null) => {
-      if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+      if (isPriceRangeInvalid({ ...filtersRef.current, minPrice, maxPrice })) {
         return;
       }
 
@@ -137,31 +131,6 @@ const FilterPanel = ({
           </p>
         )}
       </FilterSection>
-
-      {categories.length > 0 && (
-        <FilterSection title="Category">
-          <label className="block space-y-1">
-            <span className="sr-only">Category</span>
-            <select
-              value={filters.categoryUid ?? ""}
-              onChange={(event) =>
-                onFiltersChange({
-                  ...filters,
-                  categoryUid: event.target.value || null,
-                })
-              }
-              className={selectClassName}
-            >
-              <option value="">All categories</option>
-              {categories.map((category) => (
-                <option key={category.uid} value={category.uid}>
-                  {category.enName}
-                </option>
-              ))}
-            </select>
-          </label>
-        </FilterSection>
-      )}
 
       <FilterSection title="Availability">
         <label className="block space-y-1">

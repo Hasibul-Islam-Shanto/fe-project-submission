@@ -23,7 +23,7 @@ const ProductsLoading = () => {
                 <div className={`h-5 w-16 ${pulse}`} />
               </div>
 
-              {Array.from({ length: 3 }).map((_, index) => (
+              {Array.from({ length: 2 }).map((_, index) => (
                 <div
                   key={index}
                   className="space-y-3 border-b border-[var(--color-border)] pb-5 last:border-b-0 last:pb-0"

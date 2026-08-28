@@ -29,5 +29,4 @@ const ProductGridSkeleton = ({
   );
 };
 
-export default ProductCardSkeleton;
 export { ProductGridSkeleton };
