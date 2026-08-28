@@ -52,3 +52,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `store/` — Zustand stores (cart state with localStorage persistence)
 - `types/` — TypeScript domain types
 - `utils/` — Normalization and product helpers
+
+## Product cards and optimistic cart
+
+Product cards include an add-to-cart button outside the product link. The button uses React 19's `useOptimistic` for in-flight UI updates; Zustand remains the committed cart state (persisted to localStorage). A 300 ms delay simulates an async cart request until a real API exists.
+
+To test failure handling locally, set `NEXT_PUBLIC_CART_MOCK_FAIL=true` in `.env.local` and restart the dev server. Failed adds revert the optimistic quantity and show an error message.
