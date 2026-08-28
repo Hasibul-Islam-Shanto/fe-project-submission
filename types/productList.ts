@@ -1,4 +1,7 @@
 export interface ProductFilterInput {
+  isActive?: boolean | null;
+  uid?: string;
+  posItemCode?: string;
   [key: string]: unknown;
 }
 

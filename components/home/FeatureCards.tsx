@@ -22,7 +22,7 @@ const features = [
 const FeatureCards = () => {
   return (
     <section className="px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-3 sm:gap-6">
+      <div className="mx-auto grid max-w-6xl gap-4 sm:grid-cols-3 sm:gap-6">
         {features.map((feature, index) => (
           <div
             key={feature.title}

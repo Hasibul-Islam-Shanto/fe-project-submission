@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Work_Sans } from "next/font/google";
 import Header from "@/components/ui/Header";
+import UrqlProvider from "@/components/providers/UrqlProvider";
 import "./globals.css";
 
 const workSans = Work_Sans({
@@ -19,7 +20,9 @@ const RootLayout = ({ children }: LayoutProps<"/">) => {
     <html lang="en" className={`${workSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <Header />
-        <main>{children}</main>
+        <UrqlProvider>
+          <main>{children}</main>
+        </UrqlProvider>
       </body>
     </html>
   );

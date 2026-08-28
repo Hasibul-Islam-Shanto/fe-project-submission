@@ -8,7 +8,7 @@ const ProductBreadcrumb = ({ productName }: ProductBreadcrumbProps) => {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mx-auto max-w-5xl px-4 pt-8 sm:px-6 lg:px-8"
+      className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 lg:px-2"
     >
       <ol className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
         <li>

@@ -1,12 +1,8 @@
-import ProductCard from "@/components/product/ProductCard";
-import ProductEmpty from "@/components/product/ProductEmpty";
-import { ProductFilters, ProductToolbar } from "@/components/filters";
-import Pagination from "@/components/ui/Pagination";
+import ProductsClient from "@/components/product/ProductsClient";
 import { fetchProductsList } from "@/lib/graphql/api/productsList";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 
 interface ProductsPageProps {
   searchParams: Promise<{ page?: string }>;
@@ -28,10 +24,8 @@ const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
     redirect(totalPages === 1 ? "/products" : `/products?page=${totalPages}`);
   }
 
-  const safePage = currentPage;
-
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-2">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-aurora">Products</h1>
         <p className="mt-2 text-[var(--color-text-secondary)]">
@@ -39,41 +33,12 @@ const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
         </p>
       </div>
 
-      <div className="flex gap-8">
-        <aside className="hidden w-64 shrink-0 lg:block">
-          <div className="sticky top-24">
-            <ProductFilters />
-          </div>
-        </aside>
-
-        <div className="min-w-0 flex-1">
-          <ProductToolbar totalCount={count} />
-
-          {products.length === 0 ? (
-            <ProductEmpty
-              title="No products found"
-              message="We couldn't find any products matching your criteria. Try adjusting filters or check back later for new arrivals."
-            />
-          ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3">
-              {products.map((product, index) => (
-                <ProductCard
-                  key={product.uid}
-                  product={product}
-                  animationDelay={index * 80}
-                  priority={index === 0}
-                />
-              ))}
-            </div>
-          )}
-
-          <div className="mt-10">
-            <Suspense fallback={null}>
-              <Pagination currentPage={safePage} totalPages={totalPages} />
-            </Suspense>
-          </div>
-        </div>
-      </div>
+      <ProductsClient
+        initialProducts={products}
+        initialCount={count}
+        initialPage={currentPage}
+        pageSize={PAGE_SIZE}
+      />
     </div>
   );
 };

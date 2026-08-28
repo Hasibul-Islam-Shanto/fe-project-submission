@@ -37,7 +37,7 @@ const ProductDetailsContainer = ({ product }: ProductDetailsContainerProps) => {
   }));
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-2">
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
         <ImageGallery
           key={selectedVariant.uid || selectedVariantIndex}
