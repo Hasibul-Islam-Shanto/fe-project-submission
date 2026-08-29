@@ -14,9 +14,9 @@ const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
   const params = await searchParams;
   const { filters, sort, page } = parseProductListSearchParams(params);
 
-  const { count } = await queryProductList({
-    skip: 0,
-    limit: 1,
+  const { products, count } = await queryProductList({
+    skip: (page - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
     filters,
     sort,
   });
@@ -30,13 +30,6 @@ const ProductsPage = async ({ searchParams }: ProductsPageProps) => {
       RedirectType.replace,
     );
   }
-
-  const { products } = await queryProductList({
-    skip: (effectivePage - 1) * PAGE_SIZE,
-    limit: PAGE_SIZE,
-    filters,
-    sort,
-  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-2">
