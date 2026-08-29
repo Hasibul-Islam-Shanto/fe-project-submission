@@ -1,91 +1,223 @@
 # TonMart
 
-Electronics and appliances storefront built with Next.js, wired to the Walton Plaza GraphQL API.
+## Summary
 
-## Prerequisites
+TonMart is a responsive electronics and appliances storefront built with
+Next.js and the Walton Plaza GraphQL API. Users can browse products, view
+product details, filter and sort the loaded products, and manage a cart that
+stays saved after a page reload.
 
-- Node.js 20+
+## Submission links
+
+- [Live application](https://tonmart.vercel.app/)
+- [GitHub repository](https://github.com/Hasibul-Islam-Shanto/fe-project-submission)
+
+## Screenshots
+
+### Homepage
+
+The responsive landing page introduces TonMart and provides direct links to the
+product catalog.
+
+![TonMart homepage](screenshots/homepage.png)
+
+### Product listing
+
+The catalog shows product pricing, discounts, stock information, filters,
+sorting, and add-to-cart actions.
+
+![TonMart product listing](screenshots/product-listing.png)
+
+### Product details
+
+The details page shows the image gallery, price, stock, add-to-cart action, and
+available product information tabs.
+
+![TonMart product details](screenshots/product_details.png)
+
+### Cart
+
+The cart drawer provides quantity controls, item removal, subtotal, clear-cart,
+and simulated checkout actions.
+
+![TonMart cart drawer](screenshots/cart.png)
+
+## Tech stacks
+
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Zustand 5
+- GraphQL
+- Zod
+- ESLint, Prettier, and Husky
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 20 or later
 - npm
 
-## Setup
+### Installation
 
-1. Install dependencies:
+1. Install the dependencies:
 
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
-2. Copy the environment file and set your GraphQL endpoint:
+2. Create the local environment file:
 
-```bash
-cp .env.example .env.local
-```
+   ```bash
+   cp .env.example .env.local
+   ```
 
 3. Start the development server:
 
-```bash
-npm run dev
-```
+   ```bash
+   npm run dev
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Scripts
-
-| Command            | Description                       |
-| ------------------ | --------------------------------- |
-| `npm run dev`      | Start the dev server              |
-| `npm run build`    | Production build                  |
-| `npm run start`    | Run the production server         |
-| `npm run validate` | Typecheck, lint, and format check |
+4. Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment variables
 
-| Variable                       | Description                          |
-| ------------------------------ | ------------------------------------ |
-| `NEXT_PUBLIC_GRAPHQL_ENDPOINT` | GraphQL API URL (see `.env.example`) |
+| Variable                       | Required | Description                                                                |
+| ------------------------------ | -------- | -------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_GRAPHQL_ENDPOINT` | Yes      | Walton Plaza GraphQL endpoint                                              |
+| `NEXT_PUBLIC_CART_MOCK_FAIL`   | No       | Set to `true` to simulate a failed add-to-cart request from a product card |
 
-## Project structure
+The example GraphQL endpoint is available in `.env.example`.
 
-- `app/` — Next.js App Router pages and routes
-- `components/` — UI (home, product, filters, cart)
-- `lib/` — GraphQL clients, fetch helpers, cart utilities
-- `store/` — Zustand stores (cart state with localStorage persistence)
-- `types/` — TypeScript domain types
-- `utils/` — Normalization and product helpers
+## Available scripts
 
-## Product cards and optimistic cart
+| Command                | Description                                       |
+| ---------------------- | ------------------------------------------------- |
+| `npm run dev`          | Start the development server                      |
+| `npm run build`        | Create a production build                         |
+| `npm run start`        | Run the production build                          |
+| `npm run lint`         | Run ESLint                                        |
+| `npm run typecheck`    | Check TypeScript without creating build files     |
+| `npm run format:check` | Check formatting with Prettier                    |
+| `npm run validate`     | Run type checking, linting, and formatting checks |
 
-Product cards include an add-to-cart button outside the product link. The button uses React 19's `useOptimistic` for in-flight UI updates; Zustand remains the committed cart state (persisted to localStorage). A 300 ms delay simulates an async cart request until a real API exists.
+## Feature checklist
 
-To test failure handling locally, set `NEXT_PUBLIC_CART_MOCK_FAIL=true` in `.env.local` and restart the dev server. Failed adds revert the optimistic quantity and show an error message.
+- [x] Responsive landing page
+- [x] Responsive product listing page
+- [x] Product cards with images, price, discount, and stock information
+- [x] Product details page with an image gallery and variant selection
+- [x] Product information tabs based on the available API data
+- [x] Loading, empty, error, and product-not-found states
+- [x] URL-based filter, sorting, and page state
+- [x] Desktop and mobile filter interfaces
+- [x] Cart drawer with add, remove, clear, and quantity controls
+- [x] Cart quantity limited by the available stock
+- [x] Cart data saved in `localStorage`
+- [x] Optimistic add-to-cart state with a simulated failure option
+- [x] Simulated frontend checkout flow
+- [ ] **Partially completed:** Pagination, filtering, and sorting work on the
+      products loaded by the application, not all products reported by the API.
+      See [Limitations](#limitations).
+- [ ] **Not completed:** A GraphQL query client is not used. See
+      [Limitations](#limitations).
+- [ ] **Not completed:** GraphQL types are not generated from the schema. See
+      [Limitations](#limitations).
+- [ ] **Not completed:** Cart and checkout are not connected to a backend API.
+      See [Limitations](#limitations).
 
-## Product list filtering
+## Architecture and decisions
 
-The products page is URL-driven. Filter, sort, and pagination state live in query parameters:
+### Data fetching
+
+I wrote a small GraphQL fetcher and separate queries for the product list and
+product details. Most product fetching happens on the server. I also normalize
+the API response before using it in the UI so missing images, prices, variants,
+or information sections do not break the page.
+
+### Product list
+
+The filter, sorting, and page values are stored in the URL:
 
 ```text
 /products?minPrice=1000&maxPrice=50000&availability=in-stock&sort=price-asc&page=2
 ```
 
-The server parses those params, loads a cached product catalog, applies the in-memory pipeline, and renders the page. Client controls update the URL via `router.replace`; there is no client-side refetch effect.
+The server reads these values, loads an active-product catalog, applies the
+filter and sorting rules, and then shows nine products for the selected page.
+Changing a filter or sorting option returns the user to page 1.
 
-### Architecture
+I used this approach because the product API available to me did not provide
+the price filter, availability filter, and price sorting queries needed by the
+UI.
 
-```text
-URL params → parseProductListSearchParams → getProductCatalog (cached)
-  → applyProductListPipeline → render ProductsClient
-```
+### Cart
 
-- **Catalog cache** — `lib/products/getProductCatalog.ts` fetches active products once per process (5-minute TTL, max 1,000 products).
-- **Pipeline** — `lib/products/applyProductListPipeline.ts` handles price range, availability, and price sort before pagination.
-- **URL helpers** — `lib/products/parseProductListSearchParams.ts` and `utils/productListUrl.ts`.
+I used Zustand for cart state and saved only the cart items in `localStorage`.
+The cart drawer state is not saved. Product variants have separate cart IDs, and
+the quantity cannot go above the available stock.
 
-The Walton API only supports `uid`, `posItemCode`, and `isActive` filters with skip/limit pagination. Price, availability, and sort are applied in-app against the cached catalog.
+Product cards use React's `useOptimistic` and `useTransition` to show an
+immediate add-to-cart state. A short delay acts like an API request. The
+`NEXT_PUBLIC_CART_MOCK_FAIL` variable can be used to test the failure state.
 
-### Filter controls
+## Trade-offs
 
-- **Price range** — debounced min/max inputs; invalid ranges show an error and do not navigate.
-- **Availability** — all / in-stock / out-of-stock.
-- **Sort** — default, price low-to-high, price high-to-low.
+- The custom GraphQL fetcher keeps product fetching mostly on the server and
+  avoids adding another library, but I have to manage the queries, caching, and
+  errors myself.
+- Hand-written TypeScript types were easier for me to use, but they can become
+  different from the GraphQL schema when the API changes.
+- Local filtering and sorting allowed me to build the required UI, but the
+  result is limited to the products returned to the application.
+- The five-minute process cache reduces repeated product requests, but it can
+  contain old data and is not shared between server instances.
+- Zustand and `localStorage` make the cart work without a backend, but the cart
+  is available only in the current browser.
 
-Changing any filter or sort resets pagination to page 1.
+## Limitations
+
+### GraphQL query client
+
+I did not use a GraphQL query client because I do not yet have enough experience
+with GraphQL clients, and I wanted to keep most data fetching on the server. I
+am still learning GraphQL. With more time, I can become comfortable with a
+query client and start contributing with it.
+
+### GraphQL types
+
+I wrote the GraphQL response types manually instead of using GraphQL Code
+Generator or a similar tool. This is related to the same GraphQL experience
+limitation. The types work for the current queries, but they are not generated
+automatically from the API schema.
+
+### Pagination, filtering, and sorting
+
+The API reports the total product count, but it returns a smaller product list
+for the catalog request. The application currently filters, sorts, counts, and
+paginates the products it receives. Because of this, the UI count and pages can
+be lower than the total count reported by the API.
+
+I chose this approach to match the filter and sorting requirements with the
+queries I had available. Ideally, the API should receive the pagination,
+filter, and sorting values, then return the matching products and the count
+after filtering.
+
+### Cart and checkout
+
+I did not have cart and order mutation queries. The cart is therefore stored in
+the browser, and checkout is only a simulated success flow.
+
+## Improvements
+
+- Learn and add a GraphQL query client while keeping server-side data fetching
+  where it is useful.
+- Generate TypeScript types from the GraphQL schema instead of maintaining them
+  manually.
+- Move pagination, filtering, sorting, and matching-product counts to the API.
+- If the API cannot be changed, fetch its product pages in controlled batches
+  and cache the complete result before applying local filters.
+- Replace the simulated cart and checkout with backend mutations when those
+  queries become available.
